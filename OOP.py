@@ -62,8 +62,8 @@ class Node:
                         # else v is a telomere
                         else:
                             operation = ((u),(v),((p,q)))
-                            level_operations.append(operation)
-                            level_adjacency_intermediates.append(adjacencies_genomeA_intermediate)
+                            list_of_legal_operations.append(operation)
+
 
 
             #else if the element in B is a telomere:
@@ -85,32 +85,55 @@ class Node:
         return list_of_legal_operations
 
     def take_action(self, operation):
-        #(i) adjacency + adjacency --> adjacency +adjacency
-        if type(operation[0]) is tuple and type(operation[-1]) is tuple:
+
+        state_copy = copy.deepcopy(self.state)
+
+        #if it is a fusion or fission:
+        if len(operation) == 3:
+
+            #fission
+            if type(operation[0]) is tuple:
+                state_copy.remove(operation[0])
+                state_copy.append(operation[1])
+                state_copy.append(operation[2])
+
+            #fusion
+            else:
+                state_copy.remove(operation[0])
+                state_copy.remove(operation[1])
+                state_copy.append(operation[2])
+
+        #else it is another rearrangment
+        elif len(operation) == 2:
+            #transpositions, balanced translcations and block interchanges:
+            if type(operation[0]) is tuple and type(operation[-1]) is tuple:
+                state_copy.remove(operation[0][0])
+                state_copy.remove(operation[0][1])
+                state_copy.append(operation[1][0])
+                state_copy.append(operation[1][1])
 
 
-        #fission
-        elif (type(operation[0]) is tuple and type(operation[-1]) is str):
+            #unbalanced translocations
+            elif type(operation[0]) is tuple and type(operation[-1]) is str:
+                state_copy.remove(operation[0][0])
+                state_copy.remove(operation[0][1])
+                state_copy.append(operation[1][0])
+                state_copy.append(operation[1][1])
 
-        #fusion
-        elif (type(operation[0]) is str and type(operation[-1]) is tuple):
 
-        elif (type(operation[0]) is
+        else:
+            #RAISE AN ERROR
+            print("YOU'VE GOT A PROBLEM DARLING")
 
-
-   #(ii) telomere +telomer --> adjacency
-
-   #fission: (('3h', '4t'), '3h', '4t'): (a,b) --> a, b
-   #fusion: ('3h', '4t', ('3h', '4t')): a, b __> (a,b)
-   #balanced translocation: ((('7h', '4t'), ('3h', '8t')), (('7h', '8t'), ('4t', '3h'))): (a,b),(c,d) --> (a,c),(b,d)
-   #unbalanced translocation: (('3h', ('9h', '4t')), (('3h', '4t'), '9h')): a, (b,c) --> (a,b), c
-   #transposition: ((('5h', '8t'), ('3h', '6t')), (('5h', '6t'), ('8t', '3h'))): (a,b),(c,d) --> (a,c),(b,d)
+        return state_copy
 
 
 
 
-genomeA = [[1,4,5,6,2,3],[7,8]]
-genomeB = [[1,2,3,4,5,6,7],[8]]
+
+
+genomeB = [[1,2,3],[4,5,6,7,8]]
+genomeA = [[1,2,3],[4,6,7,5,8]]
 
 def gene_extremities(genome):
     genome_gene_ext = []
@@ -156,7 +179,15 @@ currentnode = Node(adjacencies_genomeA)
 
 ops = currentnode.get_legal_operations(adjacencies_genomeB)
 for op in ops:
+    print(adjacencies_genomeA)
     print(op)
+    takeAct = currentnode.take_action(op)
+
+    print(takeAct)
+    print()
+
+
+
 
 
 
