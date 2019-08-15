@@ -2,8 +2,9 @@ import copy
 
 class Node:
 
-    def __init__(self, adjacencies, parent = None):
-        self.state = adjacencies
+    def __init__(self, state=None, parent=None):
+        self.state = state
+        self.parent = parent
         self.parent_operation = None
         self.previous = None
         self.next = None
@@ -32,10 +33,10 @@ class Node:
                     if type(marker) is tuple:
                         if marker[0] == p or marker[1] == p:
                             u = marker
-                            print('u: ', u)
+
                         if marker[0] == q or marker[1] == q:
                             v = marker
-                            print('v: ', v)
+
 
                 # element containing p in A is a telomere
                 if u == 0:
@@ -44,7 +45,7 @@ class Node:
                 if v == 0:
                     v = q
 
-                
+
                 if u != v:
                     adjacenciesA_copy.append((p,q))
                     adjacenciesA_copy.remove(u)
@@ -159,7 +160,7 @@ class Node:
                 else:
                     state_copy.append((operation[1][0][1], operation[1][0][0]))
 
-                print('operation: ', operation)
+
                 if operation[1][1][0][0] < operation[1][1][1][0]:
                     state_copy.append(operation[1][1])
                 else:
@@ -193,7 +194,7 @@ class Node:
 
         counter = 0
         for adj in adjacenciesB:
-            if adj in adjacenciesA:
+            if adj not in adjacenciesA:
                 counter+=1
 
         heuristic = counter/2
@@ -211,13 +212,19 @@ class Node:
         ordered_adjacenciesA = []
         for element in adjacenciesA:
             if type(element) is tuple:
-                if element[0][0] < element[1][0]:
+                print('elements: ', element[0][:-1], '    ', element[1][:-1])
+
+                if int(element[0][:-1]) < int(element[1][:-1]):
+
                     ordered_adjacenciesA.append(element)
+                    print('correct: ', element)
                 else:
                     #adjacenciesA.remove(element)
                     ordered_adjacenciesA.append((element[1], element[0]))
+                    print('swaped order: ', element)
             else:
                 ordered_adjacenciesA.append(element)
+        print('ordered elements: ', ordered_adjacenciesA)
 
         for element in adjacenciesB:
             if element in ordered_adjacenciesA:
@@ -276,10 +283,12 @@ def astar(start_state, end_state):
     #add start_node
     open_list.append(start_node)
     print('open list: ', open_list[0].state)
+    print('f', open_list[0].f)
 
+    #loop until find end state
     while len(open_list)>0:
 
-        #get current node
+        #get current node (the node with the lowest f in the openlist)
         current_node = open_list[0]
         current_index = 0
         for index, item in enumerate(open_list):
@@ -287,22 +296,24 @@ def astar(start_state, end_state):
                 current_node = item
                 current_index = index
 
-        #pop current node off open list and add it to the closed list
+        #remove current node from open list and add it to the closed list
         open_list.pop(current_index)
         closed_list.append(current_node)
 
         #if the end state is achieved:
-        if current_node == end_node:
+        if current_node.is_equivalent(adjacencies_genomeB):
             path = []
             current = current_node
             while current is not None:
                 path.append(current.state)
+                print('path: ', path)
                 current = current.parent
-            return path [::-1]
+            return path[::-1]
 
         children = []
         for operation in current_node.get_legal_operations(end_state):
             new_state = current_node.take_action(operation)
+            print('new state: ', new_state)
             new_node = Node(new_state, current_node)
             children.append(new_node)
 
@@ -374,8 +385,11 @@ adjacencies_genomeA = create_adjacency_list(gene_extremities(genomeA))
 
 adjacencies_genomeB = create_adjacency_list(gene_extremities(genomeB))
 
-
+#adjacencies_genomeA  = ['1t', ('1h', '2t'), ('8t', '7h'), ('4h', '5t'), ('5h', '6t'), ('9h', '10t'), ('10h', '11t'), '11h', ('8h', '9t'), ('6h', '7t'), ('2h', '3t'), ('3h', '4t')]
+print("ADJ: ", adjacencies_genomeA)
 currentnode = Node(adjacencies_genomeA)
+print()
+print(currentnode.is_equivalent(adjacencies_genomeB))
 
 ops = currentnode.get_legal_operations(adjacencies_genomeB)
 for op in ops:
@@ -386,10 +400,11 @@ for op in ops:
     print(takeAct)
     print()
 print(currentnode.is_equivalent(adjacencies_genomeB))
+print(currentnode.get_heuristic(adjacencies_genomeB))
 
 
 
-'''
+
 def main():
 
     start = adjacencies_genomeA
@@ -402,5 +417,5 @@ def main():
 if __name__ == '__main__':
     main()
 
-'''
+
 
