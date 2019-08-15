@@ -6,12 +6,10 @@ class Node:
         self.state = state
         self.parent = parent
         self.parent_operation = None
-        self.previous = None
-        self.next = None
+
         self.h = 0
         self.g = 0
         self.f = 0
-
 
     def get_legal_operations(self, adjacenciesB ):
         list_of_legal_operations = []
@@ -120,9 +118,6 @@ class Node:
 
         return list_of_legal_operations
 
-
-
-
     def take_action(self, operation):
 
         state_copy = copy.deepcopy(self.state)
@@ -200,11 +195,6 @@ class Node:
         heuristic = counter/2
         return heuristic
 
-        pass
-
-    def get_children(self, adjacenciesB ):
-        pass
-
     def is_equivalent(self, adjacenciesB):
         adjacenciesA = copy.deepcopy(self.state)
         adjacenciesB = adjacenciesB
@@ -212,19 +202,12 @@ class Node:
         ordered_adjacenciesA = []
         for element in adjacenciesA:
             if type(element) is tuple:
-                print('elements: ', element[0][:-1], '    ', element[1][:-1])
-
                 if int(element[0][:-1]) < int(element[1][:-1]):
-
                     ordered_adjacenciesA.append(element)
-                    print('correct: ', element)
                 else:
-                    #adjacenciesA.remove(element)
                     ordered_adjacenciesA.append((element[1], element[0]))
-                    print('swaped order: ', element)
             else:
                 ordered_adjacenciesA.append(element)
-        print('ordered elements: ', ordered_adjacenciesA)
 
         for element in adjacenciesB:
             if element in ordered_adjacenciesA:
@@ -233,39 +216,6 @@ class Node:
                 return False
 
         return True
-
-
-
-
-
-    def aStar(self, start_state, end_state):
-        #initialize open and closed sets
-        openset = set()
-        closedset = set()
-        #set current state as the starting state
-        current_state = start_state
-        #add starting state to the open set
-        openset.add(current_state)
-
-        #while the open set is non empty:
-        while openset:
-            #find item with lowest f score (h score + g score)
-            current_state = min(openset, key=lambda o: o.g + o.h)
-
-            #if the current_state == the goal_state then retrace the path and return it
-            if current_state == end_state:
-                path = []
-                while current_state.previous:
-                    path.append(current_state)
-                    current_state = current_state.previous
-                path.append(current_state)
-                return path[::-1]
-
-            #remove item from openset
-            openset.remove(current_state)
-            #add item to clodes set
-            closedset.add(current_state)
-            #loop throught the current_state's children/siblings
 
 
 def astar(start_state, end_state):
@@ -282,8 +232,6 @@ def astar(start_state, end_state):
 
     #add start_node
     open_list.append(start_node)
-    print('open list: ', open_list[0].state)
-    print('f', open_list[0].f)
 
     #loop until find end state
     while len(open_list)>0:
@@ -303,18 +251,20 @@ def astar(start_state, end_state):
         #if the end state is achieved:
         if current_node.is_equivalent(adjacencies_genomeB):
             path = []
+            actions_taken = []
             current = current_node
             while current is not None:
                 path.append(current.state)
-                print('path: ', path)
+                actions_taken.append(current.parent_operation)
                 current = current.parent
-            return path[::-1]
+            return path[::-1], actions_taken[::-1]
 
         children = []
         for operation in current_node.get_legal_operations(end_state):
             new_state = current_node.take_action(operation)
-            print('new state: ', new_state)
             new_node = Node(new_state, current_node)
+            new_node.parent_operation = operation
+            p
             children.append(new_node)
 
         #loop through children
@@ -336,20 +286,6 @@ def astar(start_state, end_state):
             #add child to open list
             open_list.append(child)
 
-
-
-
-
-
-
-
-
-
-
-genomeA = [[1,2,-8,-7,3],[4,5,6,9, 10, 11]]
-genomeB = [[1,2,3,4,5,6,7,8,9,10,11]]
-#genomeA = [[1,2,3,4,5,6,7,8,9]]
-
 def gene_extremities(genome):
     genome_gene_ext = []
     for chromosome in genome:
@@ -367,7 +303,6 @@ def gene_extremities(genome):
 
     return genome_gene_ext
 
-
 def create_adjacency_list(gene_extremities):
     adjacencies = []
     for chromosome in gene_extremities:
@@ -381,37 +316,32 @@ def create_adjacency_list(gene_extremities):
                 i += 2
     return adjacencies
 
+
+genomeA = [[1,2,-8,-7,3],[4,5,6,9, 10, 11]]
+genomeB = [[1,2,3,4,5,6,7,8,9,10,11]]
+
+
 adjacencies_genomeA = create_adjacency_list(gene_extremities(genomeA))
-
 adjacencies_genomeB = create_adjacency_list(gene_extremities(genomeB))
-
-#adjacencies_genomeA  = ['1t', ('1h', '2t'), ('8t', '7h'), ('4h', '5t'), ('5h', '6t'), ('9h', '10t'), ('10h', '11t'), '11h', ('8h', '9t'), ('6h', '7t'), ('2h', '3t'), ('3h', '4t')]
-print("ADJ: ", adjacencies_genomeA)
-currentnode = Node(adjacencies_genomeA)
-print()
-print(currentnode.is_equivalent(adjacencies_genomeB))
-
-ops = currentnode.get_legal_operations(adjacencies_genomeB)
-for op in ops:
-    print(adjacencies_genomeA)
-    print(op)
-    takeAct = currentnode.take_action(op)
-
-    print(takeAct)
-    print()
-print(currentnode.is_equivalent(adjacencies_genomeB))
-print(currentnode.get_heuristic(adjacencies_genomeB))
-
-
-
 
 def main():
 
     start = adjacencies_genomeA
     end = adjacencies_genomeB
-    path = astar(start,end)
+    Astar = astar(start,end)
+    path = Astar[0]
+    actions_taken = Astar[1]
+
 
     print(path)
+    print()
+    print(adjacencies_genomeA)
+    print()
+    for element in path:
+        print(element)
+    print()
+    for element in actions_taken:
+        print(element)
 
 
 if __name__ == '__main__':
