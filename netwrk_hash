@@ -211,7 +211,11 @@ class Node:
             #RAISE AN ERROR
             print("YOU'VE GOT A PROBLEM DARLING")
 
-        return state_copy
+        #order and sort
+        ordered_and_sorted = order_and_sort(state_copy)
+
+
+        return ordered_and_sorted
 
 
 
@@ -262,6 +266,7 @@ class Node:
         self.state = sort
 
 
+
 def check_node_eqivalence(state1, state2):
 
     for element in state1:
@@ -273,17 +278,39 @@ def check_node_eqivalence(state1, state2):
     return True
 
 def check_hash_key(child_state, hash_table):
-    key = child_state
+    key = hash(str(child_state))
     if key in hash_table.keys():
-        
-    for ke in node_dictionary.values():
-        if check_node_eqivalence(child_state, value.state):
-            return True, value
+        return True, hash_table.get(key)
     return False, None
 
 
 
-def func(node, adjacenciesB, hash_table):
+def order_and_sort(adjacencies):
+    ordered = []
+    for element in adjacencies:
+        if type(element) is tuple:
+            if int(element[0]) < int(element[1]):
+                ordered.append(element)
+            else:
+                ordered.append((element[1], element[0]))
+        else:
+            ordered.append(element)
+    sort = []
+    tuples = []
+    not_tuples = []
+    for element in ordered:
+        if type(element) is tuple:
+            tuples.append(element)
+        else:
+            not_tuples.append(element)
+    for element in sorted(not_tuples):
+        sort.append(element)
+    for element in sorted(tuples):
+        sort.append(element)
+
+    return sort
+
+def func(node, adjacenciesB):
 
     if node.is_equivalent(adjacenciesB):
         print('is equivalent')
@@ -297,41 +324,28 @@ def func(node, adjacenciesB, hash_table):
     for operation in operations:
         child_state = node.take_action(operation)
 
-        check_dictionary = check_node_dictionary(child_state, node_dictionary)
-        print('child state: ', child_state)
-        print('dic entries: ', )
-        #testing
-        for value in node_dictionary.items():
-            print(value[0])
-            print(value[1].state)
+        #check whether in hash table:
+        check_hash_table = check_hash_key(child_state, hash_table)
 
-        print('node key counter: ', node_key_counter)
-        if check_dictionary[0]:
-            print('found in dic')
-            print('dic entry: ', check_dictionary[1])
-            child = check_dictionary[1]
-            print('child: ', child)
-            print()
+        if check_hash_table[0]:
+            print('in hash table')
+            child = check_hash_table[1]
+            print('child is thus: ', child)
             node.children.append(child)
-
             pass
+
         else:
-            print('Not in dic')
+            print('not in hash table')
             child = Node(child_state)
-            child.order_adjacencies()
-            print('node getting added: ', child)
-            print('state of node getting added: ', child.state)
-            print()
-            node_dictionary.update({node_key_counter: child})
-            node_key_counter += 1
-            print('node key counter: ', node_key_counter)
-            print('')
+            print('child is: ', child)
+            hash_key = hash(str(child.state))
+            hash_table.update({hash_key:child})
             node.children.append(child)
-            func(child, adjacenciesB, node_dictionary, node_key_counter)
+            func(child, adjacenciesB)
 
 
 
-    return node_dictionary
+    return
 
 
 genomeA = [[1,2,5,6,-4,-3,7,8]]
@@ -341,15 +355,30 @@ a = ['1t', ('1h', '2t'), ('5h', '6t'), ('6h', '4h'), ('4t', '3h'), ('7h', '8t'),
 b = ['1t', ('1h', '2t'), ('5h', '6t'), ('4t', '3h'), ('3t', '7t'), ('7h', '8t'), '8h', ('4h', '5t'), ('2h', '6h')]
 c = ['1t', ('1h', '2t'), ('2h', '5t'), ('5h', '6t'), ('4t', '3h'), ('7h', '8t'), '8h', ('6h', '7t'), ('3t', '4h')]
 
-adjacencies_genomeA = create_adjacency_list(gene_extremities(genomeA))
+adjacencies_genomeA = order_and_sort(create_adjacency_list(gene_extremities(genomeA)))
 #adjacencies_genomeA = a
-adjacencies_genomeB = create_adjacency_list(gene_extremities(genomeB))
+adjacencies_genomeB = order_and_sort(create_adjacency_list(gene_extremities(genomeB)))
 print(adjacencies_genomeA)
 print(adjacencies_genomeB)
-hash_table = []
+
+hash_table = {}
 node = Node(adjacencies_genomeA)
-node.order_adjacencies()
-hash_key = hash(node.state)
-hash_table[hash_key].append(node)
+print(node)
 
+hash_key = hash(str(node.state))
+print((node.state))
+hash_key2 = hash(str(node.state))
+print(hash_key)
+print(hash_key2)
 
+hash_table.update({hash_key: node})
+print(hash_table.get(hash_key))
+
+func(node, adjacencies_genomeB)
+
+print(hash_table)
+
+list_of_values = hash_table.values()
+for value in list_of_values:
+    print(value.state)
+    print(value.children)
