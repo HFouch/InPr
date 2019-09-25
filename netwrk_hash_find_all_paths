@@ -1,0 +1,487 @@
+import networkx as nx
+
+def gene_extremities(genome):
+    genome_gene_ext = []
+    for chromosome in genome:
+        chromosome_gene_ext = []
+        for marker in chromosome:
+            if int(marker) >= 0:
+
+                chromosome_gene_ext.append(marker)
+                chromosome_gene_ext.append(marker+0.5)
+            else:
+                marker_str = str(abs(marker))
+                chromosome_gene_ext.append(abs(marker)+0.5)
+                chromosome_gene_ext.append(abs(marker))
+        genome_gene_ext.append(chromosome_gene_ext)
+
+    return genome_gene_ext
+
+def create_adjacency_list(gene_extremities):
+    adjacencies = []
+    for chromosome in gene_extremities:
+        i=0
+        while i < len(chromosome):
+            if chromosome[i] == chromosome[0] or chromosome[i] == chromosome[-1]:
+                adjacencies.append((chromosome[i]))
+                i +=1
+            else:
+                adjacencies.append((chromosome[i], chromosome[i+1]))
+                i += 2
+    return adjacencies
+
+
+
+
+import copy
+
+class Node:
+
+    def __init__(self, state=None):
+        self.state = state
+        self.children = []
+
+    def get_legal_operations(self, adjacenciesB):
+        list_of_legal_operations = []
+        adjacenciesA = self.state
+        adjacenciesB = adjacenciesB
+
+        for element in adjacenciesB:
+            adjacenciesA_copy = copy.deepcopy(adjacenciesA)
+
+            # if element is an adjacency:
+            if type(element) is tuple:
+                p = element[0]
+                q = element[1]
+                u = 0
+                v = 0
+
+                # if elements containing p and q respectively in a are adjacencies
+                for marker in adjacenciesA_copy:
+                    if type(marker) is tuple:
+                        if marker[0] == p or marker[1] == p:
+                            u = marker
+
+                        if marker[0] == q or marker[1] == q:
+                            v = marker
+
+                # element containing p in A is a telomere
+                if u == 0:
+                    u = p
+                # element containing q in A is a telomere
+                if v == 0:
+                    v = q
+
+                if u != v:
+                    adjacenciesA_copy.append((p, q))
+                    adjacenciesA_copy.remove(u)
+                    adjacenciesA_copy.remove(v)
+
+                    # if u is an adjacency:
+                    if type(u) is tuple:
+                        # calcultate u'p
+                        if u[0] == p:
+                            u_not_p = u[1]
+                        else:
+                            u_not_p = u[0]
+
+                        # if v is an adjacency:
+                        if type(v) is tuple:
+                            # calcultate v'q
+                            if v[0] == q:
+                                v_not_q = v[1]
+                            else:
+                                v_not_q = v[0]
+
+                            adjacenciesA_copy.append((u_not_p, v_not_q))
+                            operation = ((u, v), ((p, q), (u_not_p, v_not_q)))
+
+                            # order operation before appending
+                            op_1 = 0
+                            op_2_1 = 0
+                            op_2_2 = 0
+                            op_2 = 0
+
+                            if u[0] < v[0]:
+                                op_1 = (u, v)
+                            else:
+                                op_1 = (v, u)
+                            if p < q:
+                                op_2_1 = (p, q)
+                            else:
+                                op_2_1 = (q, p)
+                            if u_not_p < v_not_q:
+                                op_2_2 = (u_not_p, v_not_q)
+                            else:
+                                op_2_2 = (v_not_q, u_not_p)
+                            if op_2_1[0] < op_2_2[0]:
+                                op_2 = (op_2_1, op_2_2)
+                            else:
+                                op_2 = (op_2_2, op_2_1)
+                            ordered_operation = (op_1, op_2)
+
+                            if ordered_operation not in list_of_legal_operations:
+                                list_of_legal_operations.append((ordered_operation))
+                            else:
+                                pass
+
+
+                        # else v is a telomere
+                        else:
+                            adjacenciesA_copy.append(u_not_p)
+                            operation = ((u, v), ((p, q), (u_not_p)))
+                            # if u[0] < v:
+                            #    op_1 = (u, v)
+                            # else:
+                            #    op_1 = (v, u)
+                            if p < q:
+                                op_2_1 = (p, q)
+                            else:
+                                op_2_1 = (q, p)
+                                # if op_2_1[0] < u_not_p:
+                                op_2 = (op_2_1, u_not_p)
+                            # else:
+                            #    op_2 = (u_not_p, op_2_1)
+                            op_2 = (op_2_1, u_not_p)
+                            ordered_operation = ((u, v), op_2)
+
+                            if ordered_operation not in list_of_legal_operations:
+                                list_of_legal_operations.append((ordered_operation))
+                            else:
+                                pass
+
+
+                    # else u is a telomere
+                    else:
+                        # if v is an adjacency
+                        if type(v) is tuple:
+                            # calculate v'q
+                            if v[0] == q:
+                                v_not_q = v[1]
+                            else:
+                                v_not_q = v[0]
+                            adjacenciesA_copy.append(v_not_q)
+                            operation = ((v, u), ((p, q), (v_not_q)))
+
+                            if p < q:
+                                op_2_1 = (p, q)
+                            else:
+                                op_2_1 = (q, p)
+
+                            ordered_operation = ((v, u), (op_2_1, v_not_q))
+
+                            if ordered_operation not in list_of_legal_operations:
+                                list_of_legal_operations.append((ordered_operation))
+                            else:
+                                pass
+
+
+                        # e;se v is a telomere
+                        else:
+                            operation = (u, v, ((p, q)))
+                            if p < q:
+                                op_2 = (p, q)
+                            else:
+                                op_2 = (q, p)
+                            if u < v:
+                                ordered_operation = (u, v, op_2)
+                            else:
+                                ordered_operation = (v, u, op_2)
+
+                            if ordered_operation not in list_of_legal_operations:
+                                list_of_legal_operations.append((ordered_operation))
+                            else:
+                                pass
+
+
+            # else if the element is a telomere
+            elif type(element) is str:
+                u = 0
+                p = element
+
+                for marker in adjacenciesA_copy:
+                    if type(marker) is tuple:
+                        if marker[0] == p or marker[1] == p:
+                            u = marker
+
+                if u == 0:
+                    u = p
+
+                # if u is not a telomere:
+                if u != p:
+                    adjacenciesA_copy.append(u[0])
+                    adjacenciesA_copy.append(u[1])
+                    adjacenciesA_copy.remove(u)
+                    operation = ((u), (u[0]), (u[1]))
+                    if operation not in list_of_legal_operations:
+                        list_of_legal_operations.append((operation))
+                    else:
+                        pass
+
+        return list_of_legal_operations
+
+    def take_action(self, operation):
+
+        state_copy = copy.deepcopy(self.state)
+
+        # if it is a fusion or fission:
+
+        if len(operation) == 3:
+
+            # fission
+            if type(operation[0]) is tuple:
+
+                state_copy.remove(operation[0])
+                state_copy.append(operation[1])
+                state_copy.append(operation[2])
+
+            # fusion
+            else:
+                state_copy.remove(operation[0])
+                state_copy.remove(operation[1])
+
+                # ensure gene extremities in correct order for downstream comparisions with genome B extremities
+                if operation[2][0] < operation[2][1]:
+                    state_copy.append(operation[2])
+                else:
+                    state_copy.append((operation[2][1], operation[2][0]))
+
+        # else it is another rearrangment
+        elif len(operation) == 2:
+            # transpositions, balanced translcations and block interchanges:
+            # if type(operation[0]) is tuple and type(operation[-1]) is tuple:
+            if type(operation[0][0]) is tuple and type(operation[0][1]) is tuple:
+                state_copy.remove(operation[0][0])
+                state_copy.remove(operation[0][1])
+
+                # ensure gene extremities in correct order for downstream comparision with genome B extremities
+
+                if operation[1][0][0] < operation[1][0][1]:
+                    state_copy.append(operation[1][0])
+                else:
+                    state_copy.append((operation[1][0][1], operation[1][0][0]))
+
+                if operation[1][1][0] < operation[1][1][1]:
+                    state_copy.append(operation[1][1])
+                else:
+                    state_copy.append((operation[1][1][1], operation[1][1][0]))
+
+
+
+            # unbalanced translocations and intrachromosomal transpositions to end of chromosome
+            elif type(operation[0][0]) is not tuple or type(operation[0][-1]) is not tuple:
+
+                state_copy.remove(operation[0][0])
+                state_copy.remove(operation[0][1])
+
+                # ensure gene extremities in correct order for downstream comparisions with genome B extremities
+                if operation[1][0][0] < operation[1][0][1]:
+                    state_copy.append(operation[1][0])
+                else:
+                    state_copy.append((operation[1][0][1], operation[1][0][0]))
+
+                state_copy.append(operation[1][1])
+
+
+        else:
+            # RAISE AN ERROR
+            print("YOU'VE GOT A PROBLEM DARLING")
+
+        # order and sort
+        ordered_and_sorted = order_and_sort(state_copy)
+
+        return ordered_and_sorted
+
+
+
+    def is_equivalent(self, adjacenciesB):
+        adjacenciesA = copy.deepcopy(self.state)
+        adjacenciesB = adjacenciesB
+
+        ordered_adjacenciesA = []
+        for element in adjacenciesA:
+            if type(element) is tuple:
+                if int(element[0]) < int(element[1]):
+                    ordered_adjacenciesA.append(element)
+                else:
+                    ordered_adjacenciesA.append((element[1], element[0]))
+            else:
+                ordered_adjacenciesA.append(element)
+
+        for element in adjacenciesB:
+            if element in ordered_adjacenciesA:
+                pass
+            else:
+                return False
+
+        return True
+    def order_adjacencies(self):
+        ordered = []
+        for element in self.state:
+            if type(element) is tuple:
+                if int(element[0]) < int(element[1]):
+                    ordered.append(element)
+                else:
+                    ordered.append((element[1], element[0]))
+            else:
+                ordered.append(element)
+        sort = []
+        tuples = []
+        not_tuples = []
+        for element in ordered:
+            if type(element) is tuple:
+                tuples.append(element)
+            else:
+                not_tuples.append(element)
+        for element in sorted(not_tuples):
+            sort.append(element)
+        for element in sorted(tuples):
+            sort.append(element)
+
+        self.state = sort
+
+
+
+def check_node_eqivalence(state1, state2):
+
+    for element in state1:
+        if element in state2:
+            pass
+        else:
+            return False
+
+    return True
+
+def check_hash_key(child_state, hash_table):
+    key = hash(str(child_state))
+    if key in hash_table.keys():
+        return True, hash_table.get(key)
+    return False, None
+
+
+
+def order_and_sort(adjacencies):
+    ordered = []
+    for element in adjacencies:
+        if type(element) is tuple:
+            if int(element[0]) < int(element[1]):
+                ordered.append(element)
+            else:
+                ordered.append((element[1], element[0]))
+        else:
+            ordered.append(element)
+    sort = []
+    tuples = []
+    not_tuples = []
+    for element in ordered:
+        if type(element) is tuple:
+            tuples.append(element)
+        else:
+            not_tuples.append(element)
+    for element in sorted(not_tuples):
+        sort.append(element)
+    for element in sorted(tuples):
+        sort.append(element)
+
+    return sort
+
+def func(start_node, target_node, adjacenciesB):
+    node = start_node
+
+    #if node is equivalent if hash(str(node.state)) == hash(str(target_node.state)):
+
+    if node.is_equivalent(adjacenciesB):
+    #if hash(str(node.state)) == hash(str(target_node.state)):
+
+        pass
+
+
+    operations = node.get_legal_operations(adjacenciesB)
+
+
+    for operation in operations:
+        child_state = node.take_action(operation)
+
+        #check whether in hash table:
+        check_hash_table = check_hash_key(child_state, hash_table)
+
+        if check_hash_table[0]:
+            child = check_hash_table[1]
+            node.children.append(child)
+            pass
+
+        else:
+            child = Node(child_state)
+            hash_key = hash(str(child.state))
+            hash_table.update({hash_key:child})
+            node.children.append(child)
+            func(child, target_node, adjacenciesB)
+
+
+
+    return target_node
+
+
+genomeA = [[1,2,5,6,-4,-3,7,8]]
+genomeB = [[1,2,3,4,5,6, 7, 8]]
+
+a = ['1t', ('1h', '2t'), ('5h', '6t'), ('6h', '4h'), ('4t', '3h'), ('7h', '8t'), '8h', ('2h', '3t'), ('5t', '7t')]
+b = ['1t', ('1h', '2t'), ('5h', '6t'), ('4t', '3h'), ('3t', '7t'), ('7h', '8t'), '8h', ('4h', '5t'), ('2h', '6h')]
+c = ['1t', ('1h', '2t'), ('2h', '5t'), ('5h', '6t'), ('4t', '3h'), ('7h', '8t'), '8h', ('6h', '7t'), ('3t', '4h')]
+
+adjacencies_genomeA = order_and_sort(create_adjacency_list(gene_extremities(genomeA)))
+#adjacencies_genomeA = a
+adjacencies_genomeB = order_and_sort(create_adjacency_list(gene_extremities(genomeB)))
+print(adjacencies_genomeA)
+print(adjacencies_genomeB)
+
+hash_table = {}
+start_node = Node(adjacencies_genomeA)
+target_node = Node(adjacencies_genomeB)
+#print(node)
+
+hash_key = hash(str(start_node.state))
+
+hash_key2 = hash(str(target_node.state))
+#print(hash_key)
+#print(hash_key2)
+
+hash_table.update({hash_key: start_node})
+hash_table.update({hash_key2:target_node})
+#print(hash_table.get(hash_key))
+
+func(start_node, target_node, adjacencies_genomeB)
+
+
+nodes = []
+edges = []
+#print(hash_table)
+print('-------------------')
+
+network = nx.DiGraph()
+
+list_of_values = hash_table.values()
+for value in list_of_values:
+    print(value)
+    print(value)
+    if value not in nodes:
+        nodes.append(value)
+for node in nodes:
+    network.add_node(node)
+
+for node in nodes:
+    for child in node.children:
+        network.add_edge(node, child)
+
+
+for node in nodes:
+    print(node.state)
+
+print()
+print()
+all_paths = nx.all_simple_paths(network, start_node, target_node)
+
+for path in all_paths:
+    for node in path:
+        print(node.state)
+    print()
