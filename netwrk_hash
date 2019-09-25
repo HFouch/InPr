@@ -41,7 +41,7 @@ class Node:
         self.children = []
 
 
-    def get_legal_operations(self, adjacenciesB ):
+        def get_legal_operations(self, adjacenciesB ):
         list_of_legal_operations = []
         adjacenciesA = self.state
         adjacenciesB = adjacenciesB
@@ -97,14 +97,60 @@ class Node:
 
                             adjacenciesA_copy.append((u_not_p, v_not_q))
                             operation = ((u, v), ((p, q), (u_not_p, v_not_q)))
-                            list_of_legal_operations.append((operation))
+
+                            #order operation before appending
+                            op_1 = 0
+                            op_2_1 = 0
+                            op_2_2 =0
+                            op_2 = 0
+
+                            if u[0] < v[0]:
+                                op_1 = (u, v)
+                            else:
+                                op_1 = (v, u)
+                            if p < q:
+                                op_2_1 = (p,q)
+                            else:
+                                op_2_1 = (q, p)
+                            if u_not_p < v_not_q:
+                                op_2_2 = (u_not_p, v_not_q)
+                            else:
+                                op_2_2 = (v_not_q, u_not_p)
+                            if op_2_1[0] < op_2_2[0]:
+                                op_2 = (op_2_1, op_2_2)
+                            else:
+                                op_2 = (op_2_2, op_2_1)
+                            ordered_operation = (op_1, op_2)
+
+                            if ordered_operation not in list_of_legal_operations:
+                                list_of_legal_operations.append((ordered_operation))
+                            else:
+                                pass
 
 
                         # else v is a telomere
                         else:
                             adjacenciesA_copy.append(u_not_p)
                             operation = ((u, v), ((p, q), (u_not_p)))
-                            list_of_legal_operations.append((operation))
+                            #if u[0] < v:
+                            #    op_1 = (u, v)
+                            #else:
+                            #    op_1 = (v, u)
+                            if p < q:
+                                op_2_1 = (p,q)
+                            else:
+                                op_2_1 = (q, p)
+                            #if op_2_1[0] < u_not_p:
+                                op_2 = (op_2_1, u_not_p)
+                            #else:
+                            #    op_2 = (u_not_p, op_2_1)
+                            op_2 = (op_2_1, u_not_p)
+                            ordered_operation = ((u, v), op_2)
+
+                            if ordered_operation not in list_of_legal_operations:
+                                list_of_legal_operations.append((ordered_operation))
+                            else:
+                                pass
 
 
                    #else u is a telomere
@@ -118,12 +164,38 @@ class Node:
                                 v_not_q = v[0]
                             adjacenciesA_copy.append(v_not_q)
                             operation = ((v,u),((p,q),(v_not_q)))
-                            list_of_legal_operations.append(operation)
+
+                            if p < q:
+                                op_2_1 = (p, q)
+                            else:
+                                op_2_1 = (q, p)
+
+                            ordered_operation = ((v, u), (op_2_1, v_not_q))
+
+
+                            if ordered_operation not in list_of_legal_operations:
+                                list_of_legal_operations.append((ordered_operation))
+                            else:
+                                pass
+
 
                         #e;se v is a telomere
                         else:
                             operation = (u,v,((p,q)))
-                            list_of_legal_operations.append(operation)
+                            if p < q:
+                                op_2 = (p, q)
+                            else:
+                                op_2 = (q, p)
+                            if u < v:
+                                ordered_operation = (u, v, op_2)
+                            else:
+                                ordered_operation = (v, u, op_2)
+
+                            if ordered_operation not in list_of_legal_operations:
+                                list_of_legal_operations.append((ordered_operation))
+                            else:
+                                pass
+
 
             #else if the element is a telomere
             elif type(element) is str:
@@ -144,19 +216,27 @@ class Node:
                     adjacenciesA_copy.append(u[1])
                     adjacenciesA_copy.remove(u)
                     operation = ((u), (u[0]), (u[1]))
-                    list_of_legal_operations.append(operation)
+                    if operation not in list_of_legal_operations:
+                        list_of_legal_operations.append((operation))
+                    else:
+                        pass
+
 
         return list_of_legal_operations
+
+
 
     def take_action(self, operation):
 
         state_copy = copy.deepcopy(self.state)
 
         #if it is a fusion or fission:
+
         if len(operation) == 3:
 
             #fission
             if type(operation[0]) is tuple:
+
                 state_copy.remove(operation[0])
                 state_copy.append(operation[1])
                 state_copy.append(operation[2])
@@ -175,11 +255,13 @@ class Node:
         #else it is another rearrangment
         elif len(operation) == 2:
             #transpositions, balanced translcations and block interchanges:
-            if type(operation[0]) is tuple and type(operation[-1]) is tuple:
+            #if type(operation[0]) is tuple and type(operation[-1]) is tuple:
+            if type(operation[0][0]) is tuple and type(operation[0][1]) is tuple:
                 state_copy.remove(operation[0][0])
                 state_copy.remove(operation[0][1])
 
-                # ensure gene extremities in correct order for downstream comparisions with genome B extremities
+                # ensure gene extremities in correct order for downstream comparision with genome B extremities
+
                 if operation[1][0][0] < operation[1][0][1]:
                     state_copy.append(operation[1][0])
                 else:
@@ -193,8 +275,10 @@ class Node:
 
 
 
-            #unbalanced translocations
-            elif type(operation[0]) is tuple and type(operation[-1]) is not tuple:
+            #unbalanced translocations and intrachromosomal transpositions to end of chromosome
+            elif type(operation[0][0]) is not tuple or type(operation[0][-1]) is not tuple:
+
+
                 state_copy.remove(operation[0][0])
                 state_copy.remove(operation[0][1])
 
@@ -216,7 +300,6 @@ class Node:
 
 
         return ordered_and_sorted
-
 
 
     def is_equivalent(self, adjacenciesB):
